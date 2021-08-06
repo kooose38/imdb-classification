@@ -21,7 +21,6 @@ class TransformerClassification(nn.Module):
     return mask 
 
   def forward(self, x, attention_flg=False):
-    # maskの指定がないならばpa
     mask = self.create_mask(x)
 
     x1 = self.embedd(x)
