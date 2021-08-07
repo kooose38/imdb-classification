@@ -3,9 +3,11 @@ import torch.onnx as onnx
 import logging
 from torch.utils.tensorboard import SummaryWriter
 import time 
+import uuid
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__ )
+
 
 def trainer(train, val, model, criterion, optimizer, num_epochs):
   writer = SummaryWriter(log_dir="tensorboard/")
@@ -64,8 +66,9 @@ def trainer(train, val, model, criterion, optimizer, num_epochs):
       best_val_loss = val_loss 
 
   print(f"best validation Loss: {best_val_loss:4f}")
-
-  filepath = "./onnx/transformers_imdb.onnx"
+  
+  model_id = str(uuid.uuid4())[:6]
+  filepath = f"./onnx/transformers_imdb_{model_id}.onnx"
   dummy = torch.rand(1, 256)
   onnx.export(best_model, 
               dummy,
