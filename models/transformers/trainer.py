@@ -11,6 +11,7 @@ import boto3
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__ )
 
+PROJECT_NAME = PROJECT_NAME
 
 def trainer(train, val, model, criterion, optimizer, num_epochs, description=None):
   writer = SummaryWriter(log_dir="tensorboard/")
@@ -76,9 +77,12 @@ def trainer(train, val, model, criterion, optimizer, num_epochs, description=Non
   filepath_onnx = f"./onnx/{model_name}_imdb_{model_id}.onnx"
   filepath_pth = f"./onnx/{model_name}_imdb_{model_id}.pth"
     
-  # MODEL_DB に追加する
-  # modelをs3に保存する
   try:
+    start_upload = time.time()
+    saving_model_local(best_model,
+                      filepath_onnx,
+                      filepath_pth)
+    
     add_model_db(best_val_loss,
                 best_model,
                 model_id,
@@ -88,19 +92,41 @@ def trainer(train, val, model, criterion, optimizer, num_epochs, description=Non
                 optimizer,
                 description)
     
-    upload_s3_model_file(filepath_onnx, filepath_pth, model_name)
+    upload_s3_model_file(filepath_onnx,
+                         filepath_pth,
+                         model_name)
+    end_upload = time.time()
+    logger.info(f"upload tasks duration in seconds: {end_upload-start_upload}")
   finally:
     return best_model 
 
+# localにモデルの保存
+def saving_model_local(best_model, 
+                      filepath_onnx,
+                      filepath_pth):
+  dummy = torch.rand(1, 256)
+  onnx.export(best_model, 
+              dummy,
+              filepath_onnx,
+             verbose=True,
+             input_names=["input"],
+             output_names=["output"])
+  logger.info(f"saving best model file output .onnx:{filepath_onnx}")
+  
+  touch.save(best_model.state_dict(), filepath_pth)
+  logger.info(f"saving best model weigths path: {filepath_pth}")
 
+# S3に保存
 def upload_s3_model_file(file_onnx, file_pth, model_name):
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(PROJECT_NAME)
+    logger.info("upload file to s3 ... ")
     bucket.upload_file(file_onnx, f"{model_name}/{file_onnx}")
     bucket.upload_file(file_pth, f"{model_name}/{file_pth}")
-    logger.info("upload file to s3 ... ")
+    logger.info("complete upload files !!!")
     
     
+# POSTGES-SQL に保存
 def add_model_db(best_val_loss,
                  best_model,
                  model_id,
@@ -114,21 +140,10 @@ def add_model_db(best_val_loss,
   train_dataset = "./utils/data/train.txt"
   val_dataset = "./utils/data/train.txt"
   test_dataset = "./utils/data/train.txt"
+  # 評価指標を必要に応じて追加する
   evaluations = {
       "validation_loss": best_val_loss
   }
-
-  dummy = torch.rand(1, 256)
-  onnx.export(best_model, 
-              dummy,
-              filepath_onnx,
-             verbose=True,
-             input_names=["input"],
-             output_names=["output"])
-  logger.info(f"saving best model file output .onnx:{filepath_onnx}")
-  
-  touch.save(best_model.state_dict(), filepath_pth)
-  logger.info(f"saving best model weigths path: {filepath_pth}")
 
   parameters = {}
   for k, v in optimizer.param_groups[0]:
