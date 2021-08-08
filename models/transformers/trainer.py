@@ -4,12 +4,15 @@ import logging
 from torch.utils.tensorboard import SummaryWriter
 import time 
 import uuid
+from db.crud import add_model, add_expriments
+from db.uri import PROJECT_NAME
+import boto3
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__ )
 
 
-def trainer(train, val, model, criterion, optimizer, num_epochs):
+def trainer(train, val, model, criterion, optimizer, num_epochs, description=None):
   writer = SummaryWriter(log_dir="tensorboard/")
   device = "cuda:0" if torch.cuda.is_available() else "cpu"
   print(f"device: {device}")
@@ -67,19 +70,82 @@ def trainer(train, val, model, criterion, optimizer, num_epochs):
 
   print(f"best validation Loss: {best_val_loss:4f}")
   
+    
   model_id = str(uuid.uuid4())[:6]
-  filepath = f"./onnx/transformers_imdb_{model_id}.onnx"
+  model_name = "transformers"
+  filepath_onnx = f"./onnx/{model_name}_imdb_{model_id}.onnx"
+  filepath_pth = f"./onnx/{model_name}_imdb_{model_id}.pth"
+    
+  # MODEL_DB に追加する
+  # modelをs3に保存する
+  try:
+    add_model_db(best_val_loss,
+                best_model,
+                model_id,
+                model_name,
+                filepath_onnx,
+                filepath_pth,
+                optimizer,
+                description)
+    
+    upload_s3_model_file(filepath_onnx, filepath_pth, model_name)
+  finally:
+    return best_model 
+
+
+def upload_s3_model_file(file_onnx, file_pth, model_name):
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(PROJECT_NAME)
+    bucket.upload_file(file_onnx, f"{model_name}/{file_onnx}")
+    bucket.upload_file(file_pth, f"{model_name}/{file_pth}")
+    logger.info("upload file to s3 ... ")
+    
+    
+def add_model_db(best_val_loss,
+                 best_model,
+                 model_id,
+                 model_name, 
+                 filepath_onnx,
+                 filepath_pth, 
+                 optimizer,
+                 description):
+    
+  model_version_id = "0.1"
+  train_dataset = "./utils/data/train.txt"
+  val_dataset = "./utils/data/train.txt"
+  test_dataset = "./utils/data/train.txt"
+  evaluations = {
+      "validation_loss": best_val_loss
+  }
+
   dummy = torch.rand(1, 256)
   onnx.export(best_model, 
               dummy,
-              filepath,
+              filepath_onnx,
              verbose=True,
              input_names=["input"],
              output_names=["output"])
-  logger.info(f"saving best model file output .onnx:{filepath}")
+  logger.info(f"saving best model file output .onnx:{filepath_onnx}")
   
-  filepath = "./onnx/transformers_imdb.pth"
-  touch.save(best_model.state_dict(), filepath)
-  logger.info(f"saving best model weigths path: {filepath}")
+  touch.save(best_model.state_dict(), filepath_pth)
+  logger.info(f"saving best model weigths path: {filepath_pth}")
 
-  return best_model 
+  parameters = {}
+  for k, v in optimizer.param_groups[0]:
+    if k not in ["params"]:
+        parameters[k] = v 
+
+  artifact_file_paths = {
+      "onnx_model": filepath_onnx,
+      "pth_model": filepath_pth
+  }
+
+  add_model(model_id, model_name, description=description) 
+  add_expriments(model_id,
+                  model_version_id, 
+                  parameters,
+                  train_dataset, 
+                  val_dataset,
+                  test_dataset,
+                  evaluations,
+                  artifact_file_paths)
