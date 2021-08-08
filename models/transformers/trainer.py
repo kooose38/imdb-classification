@@ -54,7 +54,7 @@ def trainer(train, val, model, criterion, optimizer, num_epochs, description=Non
 
       with torch.no_grad():
         output = model(inputs, attention_flg=False)
-      loss = critetion(output, labels)
+      loss = criterion(output, labels)
       val_loss += loss.item()
       
       writer.add_scaler("data/total_loss_val", float(loss.item()), (epoch+1)*i)
@@ -104,12 +104,12 @@ def trainer(train, val, model, criterion, optimizer, num_epochs, description=Non
 def saving_model_local(best_model, 
                       filepath_onnx,
                       filepath_pth):
-  dummy = torch.rand(1, 256)
+  dummy = torch.rand(1, 256).long()
   onnx.export(best_model, 
               dummy,
               filepath_onnx,
              verbose=True,
-             input_names=["input"],
+             input_names=["input_ids"],
              output_names=["output"])
   logger.info(f"saving best model file output .onnx:{filepath_onnx}")
   
@@ -121,14 +121,13 @@ def upload_s3_model_file(file_onnx, file_pth, model_name):
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(PROJECT_NAME)
     logger.info("upload file to s3 ... ")
-    bucket.upload_file(file_onnx, f"{model_name}/{file_onnx}")
-    bucket.upload_file(file_pth, f"{model_name}/{file_pth}")
+    bucket.upload_file(file_onnx, f"{model_name}/model/{file_onnx.split("/")[2]}")
+    bucket.upload_file(file_pth, f"{model_name}/model/{file_pth.split("/")[2]}")
     logger.info("complete upload files !!!")
     
     
 # POSTGES-SQL に保存
 def add_model_db(best_val_loss,
-                 best_model,
                  model_id,
                  model_name, 
                  filepath_onnx,
