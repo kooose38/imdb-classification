@@ -51,5 +51,4 @@ class PreprocessingTransformers:
 
     return inputs 
 
-# if __name__ = "__main__":
-prep = PreprocessingTransformers("./preprocessing/word2index.txt")
+prep = PreprocessingTransformers("./pred/word2index.txt")
