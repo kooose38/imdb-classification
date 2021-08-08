@@ -1,1 +1,3 @@
 models/transformers/db/uri.py
+models/bert/db/uri.py
+models/bert/networks/weights/weights.json

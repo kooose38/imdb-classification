@@ -15,14 +15,11 @@ def load_weights_from_s3():
       res = json.load(f)
     uri = res["URL"]
     logger.info(f"loading s3 from {uri}")
-    
     start = time.time()
     res = requests.get(uri)
     end = time.time()
     logger.info(f"complete read uri duraion in senconds: {end-start}")
-    
     loaded_model_dict = torch.load(io.BytesIO(res.content))
-    
     return loaded_model_dict
     
         

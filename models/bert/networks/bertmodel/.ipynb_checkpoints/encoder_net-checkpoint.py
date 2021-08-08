@@ -11,9 +11,6 @@ class BertEncoder(nn.Module):
     ])
 
   def forward(self, embeddings, mask, attention_flg=False):
-    '''
-    all_encoder_output: attention-layerをloopさせた12のリスト型
-    '''
     all_encoder_output = []
     # 12 のアテンション重みと出力層
     for layer_module in self.layers:
