@@ -90,7 +90,8 @@ def trainer(train, val, model, criterion, optimizer, num_epochs, description=Non
     start_upload = time.time()
     saving_model_local(best_model,
                       filepath_onnx,
-                      filepath_pth)
+                      filepath_pth,
+                      device)
     
     add_model_db(best_val_loss,
                 best_model,
@@ -112,7 +113,8 @@ def trainer(train, val, model, criterion, optimizer, num_epochs, description=Non
 # localにモデルの保存
 def saving_model_local(best_model, 
                       filepath_onnx,
-                      filepath_pth):
+                      filepath_pth,
+                      device):
   dummy_input_ids = torch.rand(1, 2).long().to(device)
   dummy_token_type_ids = torch.rand(1, 2).long().to(device)
   dummy_mask = torch.rand(1, 2).long().to(device)
@@ -132,8 +134,8 @@ def upload_s3_model_file(file_onnx, file_pth, model_name):
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(PROJECT_NAME)
     logger.info("upload file to s3 ... ")
-    bucket.upload_file(file_onnx, f"{model_name}/model/{file_onnx.split("/")[2]}")
-    bucket.upload_file(file_pth, f"{model_name}/model/{file_pth.split("/")[2]}")
+    bucket.upload_file(file_onnx, f"{model_name}/model/{file_onnx.split('/')[-1]}")
+    bucket.upload_file(file_pth, f"{model_name}/model/{file_pth.split('/')[-1]}")
     logger.info("complete upload files to s3 !!!")
     
     
@@ -167,8 +169,8 @@ def add_model_db(best_val_loss,
           "pth_model": filepath_pth
       },
       "s3_path": {
-          "onnx_model": f"{model_name}/model/{file_onnx.split("/")[2]}",
-          "pth_model": f"{model_name}/model/{file_pth.split("/")[2]}"
+          "onnx_model": f"{model_name}/model/{filepath_onnx.split('/')[-1]}",
+          "pth_model": f"{model_name}/model/{filepath_pth.split('/')[-1]}"
       }
   }
 

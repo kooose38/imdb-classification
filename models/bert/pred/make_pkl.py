@@ -21,5 +21,5 @@ def upload_s3_bucket(filename: str="./pred/preprocessing/preprocessing_bert.pkl"
     s3_dir = filename.split("/")
     if len(s3_dir) < 4:
         return False
-    bucket.upload_file(filename, f"{model_name}/{s3_dir[2]}/{s3_dir[3]}")
+    bucket.upload_file(filename, f"{model_name}/{s3_dir[-2]}/{s3_dir[-1]}")
     logger.info("complete upload files !!!")
