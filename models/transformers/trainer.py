@@ -121,8 +121,8 @@ def upload_s3_model_file(file_onnx, file_pth, model_name):
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(PROJECT_NAME)
     logger.info("upload file to s3 ... ")
-    bucket.upload_file(file_onnx, f"{model_name}/model/{file_onnx.split("/")[2]}")
-    bucket.upload_file(file_pth, f"{model_name}/model/{file_pth.split("/")[2]}")
+    bucket.upload_file(file_onnx, f"{model_name}/model/{file_onnx.split('/')[2]}")
+    bucket.upload_file(file_pth, f"{model_name}/model/{file_pth.split('/')[2]}")
     logger.info("complete upload files !!!")
     
     
@@ -150,8 +150,15 @@ def add_model_db(best_val_loss,
         parameters[k] = v 
 
   artifact_file_paths = {
+      "local_path": {
       "onnx_model": filepath_onnx,
       "pth_model": filepath_pth
+      },
+      "s3_path": {
+          "onnx_model": f"{model_name}/model/{filepath_onnx.split('/')[-1]}",
+          "pth_model": f"{model_name}/model/{filepath_pth.split('/')[-1]}"
+
+      }
   }
 
   add_model(model_id, model_name, description=description) 

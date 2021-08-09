@@ -21,6 +21,7 @@ def upload_s3_bucket(filename: str="./pred/preprocessing/preprocessing_transform
     if len(s3_dir) < 3:
         return False 
     ################################################################## requests FIX
-    bucket.upload_file(filename, f"{model_name}/{s3_dir.split("/")[2]}/{s3_dir.split("/")[3]}")
+    bucket.upload_file(filename, f"{model_name}/{s3_dir[-2]}/{s3_dir[-1]}")
     word2index = "./pred/word2index.txt"
-    bucket.upload_file(filename, f"{model_name}/{s3_dir.split("/")[2]}/{word2index.split("/")[2]}")
+    bucket.upload_file(filename, f"{model_name}/{s3_dir[-2]}/{word2index.split('/')[-1]}")
+    logger.info("complete upload task !!")
