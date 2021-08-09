@@ -44,8 +44,8 @@ def trainer(train, val, model, criterion, optimizer, num_epochs, description=Non
       train_loss += loss.item()
       n_train += labels.size()[0]
         
-      writer.add_scaler("data/total_loss", float(loss.item()), (epoch+1)*i)
-      writer.add_scaler("loss/train", float(loss.item()/(i+1)), (epoch+1)*i)
+      writer.add_scalar("data/total_loss", float(loss.item()), (epoch+1)*i)
+      writer.add_scalar("loss/train", float(loss.item()/(i+1)), (epoch+1)*i)
         
     print(f"{epoch+1}/{num_epochs} | train | Loss: {train_loss/n_train:4f}")
     now = time.time()
@@ -66,8 +66,8 @@ def trainer(train, val, model, criterion, optimizer, num_epochs, description=Non
       val_loss += loss.item()
       n_val += labels.size()[0]
       
-      writer.add_scaler("data/total_loss_val", float(loss.item()), (epoch+1)*i)
-      writer.add_scaler("loss/val", float(loss.item()/(i*1)), (epoch+1)*i)  
+      writer.add_scalar("data/total_loss_val", float(loss.item()), (epoch+1)*i)
+      writer.add_scalar("loss/val", float(loss.item()/(i*1)), (epoch+1)*i)  
     
     print(f"{epoch+1}/{num_epochs} | val | Loss: {val_loss/n_val:4f}")
     now_val = time.time()
