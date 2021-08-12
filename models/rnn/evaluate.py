@@ -28,5 +28,5 @@ def evaluate(test, net, criterion):
     pred = output.argmax(-1)
     test_acc += torch.sum(pred == labels).item()
 
-  print(f"test loss: {test_loss/n_test:4f}")
-  print(f"test accuracy: {test_acc/n_test:4f}")
+  print(f"test loss: {test_loss/n_test:.4f}")
+  print(f"test accuracy: {test_acc/n_test:.4f}")
