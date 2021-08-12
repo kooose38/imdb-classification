@@ -20,7 +20,7 @@ def upload_s3_bucket(filename: str="./pred/preprocessing/preprocessing_rnn.pkl")
     s3_dir = filename.split('/')
     if len(s3_dir) < 3:
         return False 
-    ################################################################## requests FIX
+
     bucket.upload_file(filename, f"{model_name}/{s3_dir[-2]}/{s3_dir[-1]}")
     word2index = "./utils/vocab/word2index.txt"
     bucket.upload_file(word2index, f"{model_name}/{s3_dir[-2]}/{word2index.split('/')[-1]}")

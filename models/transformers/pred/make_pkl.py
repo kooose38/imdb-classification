@@ -17,11 +17,11 @@ def upload_s3_bucket(filename: str="./pred/preprocessing/preprocessing_transform
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(PROJECT_NAME)
     logger.info("upload file to s3 ....")
-    s3_dir = filename.split("/")
+    s3_dir = filename.split('/')
     if len(s3_dir) < 3:
         return False 
     ################################################################## requests FIX
     bucket.upload_file(filename, f"{model_name}/{s3_dir[-2]}/{s3_dir[-1]}")
     word2index = "./pred/word2index.txt"
-    bucket.upload_file(filename, f"{model_name}/{s3_dir[-2]}/{word2index.split('/')[-1]}")
+    bucket.upload_file(word2index, f"{model_name}/{s3_dir[-2]}/{word2index.split('/')[-1]}")
     logger.info("complete upload task !!")

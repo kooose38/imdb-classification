@@ -1,4 +1,6 @@
 import json 
+from pred.make_pkl import load_dump_prep
+
 def _highlight(word: str, attn: float) -> str:
     "Attentionの値が大きいと文字の背景が濃い赤になるhtmlを出力させる関数"
 
@@ -11,11 +13,7 @@ def load_json():
       labels = json.load(f)
     return labels
 
-def mk_html(index, sample, preds, attn_weight1, word2index):
-  index2word = {}
-  for w, i in word2index.items():
-    index2word[i] = w 
-
+def mk_html(index, sample, preds, attn_weight1):
   sentence = sample["input_ids"][index]
   labels = sample["labels"][index]
   pred = preds[index].item()
@@ -31,7 +29,7 @@ def mk_html(index, sample, preds, attn_weight1, word2index):
 
   html += "Attention-layers<br>"
   for word, attn in zip(sentence, attns1):
-    text = index2word[word.item()]
+    
     html += _highlight(text, attn)
   html += "<br>"
 

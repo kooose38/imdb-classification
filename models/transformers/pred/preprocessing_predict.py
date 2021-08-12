@@ -24,15 +24,17 @@ class PreprocessingTransformers:
   
   def transform(self, text: str, max_length=256):
     import torch 
-    import re
-    text = re.sub("\n", " ", text)
-    text = re.sub("\r", "", text)
-    text = text.replace(".", " . ")
-    text = text.replace(",", " , ")
-
     text = text.strip().split()
-    inputs = []
+    text_ = []
     for r in text:
+      r = re.replace("\n", " ")
+      r = re.replace("\r", "")
+      r = r.replace(".", " . ")
+      r = r.replace(",", " , ")
+      text_.append(r)
+
+    inputs = []
+    for r in text_:
       if r in self.word2index:
         idx = self.word2index[r]
       else:

@@ -3,10 +3,11 @@ import os
 import boto3 
 from torch.utils.tensorboard import SummaryWriter
 import uuid 
+from tqdm import tqdm 
 import torch 
 import torch.onnx as onnx 
 import logging 
-from db.crud import add_model, add_experiments
+from db.crud import add_model, add_expriments, PROJECT_NAME
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__ )
@@ -26,7 +27,7 @@ def trainer(train, val, net, criterion, optimizer, num_epochs, description=None)
     net.train()
     train_loss = 0 
     n_train = 0 
-    for i, data in enumerate(train):
+    for i, data in enumerate(tqdm(train)):
       inputs = data["input_ids"].to(device)
       labels = data["labels"].to(device)
 
@@ -41,7 +42,7 @@ def trainer(train, val, net, criterion, optimizer, num_epochs, description=None)
       writer.add_scalar("data/total_loss", float(loss.item()), (e+1)*i)
       writer.add_scalar("loss/train", float(loss.item()/(i+1)), (e+1)*i)
 
-    print(f"{e+1}/{num_epochs}  | train | loss: {train_loss/n_train:4f}")
+    print(f"{e+1}/{num_epochs}  | train | loss: {train_loss/n_train:.4f}")
     now = time.time()
     logger.info(f"duration in seconds {now-start}")
 
@@ -49,7 +50,7 @@ def trainer(train, val, net, criterion, optimizer, num_epochs, description=None)
     val_loss = 0 
     n_val = 0
     acc = 0
-    for data in val:
+    for data in tqdm(val):
       inputs = data["input_ids"].to(device)
       labels = data["labels"].to(device)
       
@@ -64,8 +65,8 @@ def trainer(train, val, net, criterion, optimizer, num_epochs, description=None)
       writer.add_scalar("data/total_val_loss", float(loss.item()), (e+1)*i)
       writer.add_scalar("loss/val", float(loss.item()/(i+1)), (e+1)*i)
 
-    print(f"{e+1}/{num_epochs} | val | loss: {val_loss/n_val:4f}")
-    print(f"{e+1}/{num_epochs} | val | accuracy: {acc/n_val:4f}")
+    print(f"{e+1}/{num_epochs} | val | loss: {val_loss/n_val:.4f}")
+    print(f"{e+1}/{num_epochs} | val | accuracy: {acc/n_val:.4f}")
     now = time.time()
     logger.info(f"duration in seconds {now-start}")
 
@@ -73,12 +74,12 @@ def trainer(train, val, net, criterion, optimizer, num_epochs, description=None)
       best_model = net 
       best_val_loss = val_loss 
 
-  print(f"best validation loss: {best_val_loss:4f}")
+  print(f"best validation loss: {best_val_loss/n_val:.4f}")
 
   model_id = str(uuid.uuid4())[:6]
   model_name = "rnn"
-  filename_onnx = f"./models/{model_name}_imdb_{model_id}.onnx"
-  filename_pth = f"./models/{model_name}_imdb_{model_id}.pth"
+  filename_onnx = f"./onnx/{model_name}_imdb_{model_id}.onnx"
+  filename_pth = f"./onnx/{model_name}_imdb_{model_id}.pth"
 
   try:
     start_upload = time.time()
@@ -108,7 +109,7 @@ def trainer(train, val, net, criterion, optimizer, num_epochs, description=None)
 
 
 def saving_model_local(net, filename_onnx, filename_pth, device):
-  os.makedirs("models", exist_ok=True)
+  os.makedirs("onnx", exist_ok=True)
   dummy = torch.rand(1, 128).long().to(device)
   onnx.export(net,
               dummy,
@@ -155,7 +156,7 @@ def add_model_db(val_loss,
   }
 
   add_model(model_id, model_name, description=description)
-  add_experiments(model_id,
+  add_expriments(model_id,
                   model_version_id,
                   parameters,
                   train_dataset,
@@ -167,7 +168,7 @@ def add_model_db(val_loss,
 
 def upload_s3_model_file(filename_onnx, filename_pth, model_name):
   s3 = boto3.resource("s3")
-  bucket = s3.Bucket("imdb-classificaton")
+  bucket = s3.Bucket(PROJECT_NAME)
   logger.info("upload s3 ...")
   bucket.upload_file(filename_onnx, f"{model_name}/model/{filename_onnx.split('/')[-1]}")
   bucket.upload_file(filename_pth, f"{model_name}/model/{filename_pth.split('/')[-1]}")
